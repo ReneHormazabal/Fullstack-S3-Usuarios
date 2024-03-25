@@ -1,4 +1,4 @@
-# Fullstack 001 - Actividad sumatoria semana 3
+# Fullstack 001 - Actividad A sumatoria semana 3
 
 ## Nombre Alumno
 
