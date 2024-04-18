@@ -1,62 +1,93 @@
 package ejercicioa.ejercicioa.controllers;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.web.bind.annotation.RestController;
 
-import ejercicioa.ejercicioa.classes.Rol;
-import ejercicioa.ejercicioa.classes.User;
-import ejercicioa.ejercicioa.classes.ErrorResponse;
+import ejercicioa.ejercicioa.model.ErrorResponse;
+import ejercicioa.ejercicioa.model.User;
+import ejercicioa.ejercicioa.services.UserService;
+import ejercicioa.ejercicioa.services.UserServiceImpl;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 
 @RestController
+@RequestMapping("/users")
 public class UserController {
     
-    private List<User> users = new ArrayList<User>();
+    @Autowired
+    private UserService userService;
 
-    public UserController() {
-        users.add(new User(0, "Franco", "franco@franco.cl", "losfrancos123", Arrays.asList(new Rol(0, "admin"))));
-        users.add(new User(1, "Italo", "italo@italo.cl", "lositalos123", Arrays.asList(new Rol(1, "comun"))));
-        users.add(new User(2, "Giovanni", "giovanni@giovanni.cl", "losgiovannis", Arrays.asList(new Rol(2, "superUser"))));
-    }
-
-
-    @GetMapping("/users")
+    @GetMapping
     public ResponseEntity<?> getUsers() {
-
-        //Si la lista no viene vacía, se retornan los usuarios
-        if (!users.isEmpty()) { 
-            System.out.println("Se ingresa a /users y se retornan los usuarios 🚀");
-            return ResponseEntity.ok(users);
-        //Si la lista viene vacía, se retorna un error
-        } else { 
-            System.out.println("Se ingresa a /users y no se encontraron usuarios ❌");
+        List<User> users = userService.getUsers();
+        System.out.println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASDASDASDASD1231231231248912938128939812"+ users);
+        if (users.isEmpty()) {
+            System.out.println("Se ingresa a /users/id, no se encuentra el usuario");
             ErrorResponse err = new ErrorResponse("No se encontraron usuarios", 404);
             return ResponseEntity.status(404).body(err);
-            
         }
+        return ResponseEntity.ok(users);
     }
 
-    @GetMapping("/users/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<?> getUserById(@PathVariable int id) {
-        //Se recorre la lista de usuarios y se compara el id, si se encuentra se retorna el usuario
-        for (User user : users) { 
-            if (user.getId() == id) {
-                System.out.println("Se ingresa a /users/id y se retorna el usuario: " + user.getId() + " 🙍‍♂️");
-                return ResponseEntity.ok(user);
-            }
+        Optional<User> userOptional = userService.getUserById(id);
+        if (!userOptional.isPresent()) {  // Cambio aquí para verificar si el Optional está vacío
+            System.out.println("Se ingresa a /users/" + id + ", no se encuentra el usuario");
+            ErrorResponse err = new ErrorResponse("Usuario no encontrado", 404);
+            return ResponseEntity.status(404).body(err);
         }
-        //Si no se encuentra el usuario, se retorna un error
-        System.out.println("Se ingresa a /users/id, no se encuentra el usuario ❌");
-        ErrorResponse err = new ErrorResponse("No se encontraron usuarios", 404);
-        return ResponseEntity.status(404).body(err);
+        System.out.println("Se ingresa a /users/" + id + ", se encuentra el usuario");
+        User user = userOptional.get();
+        return ResponseEntity.ok(user);
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateUser(@PathVariable int id, User user) {
+        User updatedUser = userService.updateUser(id, user);
+        if (updatedUser == null) {
+            System.out.println("Se ingresa a /users/id, no se encuentra el usuario ❌");
+            ErrorResponse err = new ErrorResponse("Usuario no encontrado", 404);
+            return ResponseEntity.status(404).body(err);
+        }
+        return ResponseEntity.ok(updatedUser);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteUser(@PathVariable int id) {
+        userService.deleteUser(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/login")
+    public ResponseEntity<?> login(@RequestParam String email, @RequestParam String password) {
+        User user = userService.findUserByEmail(email).orElse(null);
+        if (user == null) {
+            System.out.println("Se ingresa a /users/login, no se encuentra el usuario ❌");
+            ErrorResponse err = new ErrorResponse("Usuario no encontrado", 404);
+            return ResponseEntity.status(404).body(err);
+        }
+        if (!user.getPassword().equals(password)) {
+            System.out.println("Se ingresa a /users/login, contraseña incorrecta ❌");
+            ErrorResponse err = new ErrorResponse("Contraseña incorrecta", 401);
+            return ResponseEntity.status(401).body(err);
+        }
+        return ResponseEntity.ok("Login exitoso ✅");
+    }
+
+
+
 
 
     
